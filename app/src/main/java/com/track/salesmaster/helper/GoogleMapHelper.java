@@ -47,7 +47,7 @@ public class GoogleMapHelper {
         return getMarkerOptions(position, 0);
     }
 
-    private MarkerOptions getMarkerOptions(LatLng position, int resource) {
+    public MarkerOptions getMarkerOptions(LatLng position, int resource) {
         BitmapDescriptor bitmapDescriptor;
         if (resource != 0)
             bitmapDescriptor = BitmapDescriptorFactory.fromResource(resource);
@@ -56,6 +56,7 @@ public class GoogleMapHelper {
         return new MarkerOptions()
                 .icon(bitmapDescriptor)
                 .position(position)
+                .title("You are here")
                 .flat(true);
     }
 }
