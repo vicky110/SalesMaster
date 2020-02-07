@@ -8,7 +8,10 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
+import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
+import android.location.Address;
+import android.location.Geocoder;
 import android.location.Location;
 import android.net.Uri;
 import android.os.Bundle;
@@ -29,6 +32,11 @@ import com.google.android.gms.location.LocationSettingsRequest;
 import com.google.android.gms.location.LocationSettingsResponse;
 import com.google.android.gms.location.LocationSettingsStatusCodes;
 import com.google.android.gms.location.SettingsClient;
+import com.google.android.gms.maps.CameraUpdate;
+import com.google.android.gms.maps.GoogleMap;
+import com.google.android.gms.maps.OnMapReadyCallback;
+import com.google.android.gms.maps.SupportMapFragment;
+import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.tasks.OnCompleteListener;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
@@ -41,16 +49,26 @@ import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
 import com.track.salesmaster.activity.LoginActivity;
 import com.track.salesmaster.activity.MapsActivity;
+import com.track.salesmaster.activity.VisitHistory;
+import com.track.salesmaster.helper.GoogleMapHelper;
 import com.track.salesmaster.response.Data;
 import com.track.salesmaster.utility.SharedPreferencesManager;
-import java.text.DateFormat;
-import java.util.Date;
 
-public class MainActivity extends AppCompatActivity implements View.OnClickListener {
+import java.io.IOException;
+import java.text.DateFormat;
+import java.util.ArrayList;
+import java.util.Date;
+import java.util.List;
+import java.util.Locale;
+
+public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnMapReadyCallback {
     public String TAG = "v-v " + getClass().getName();
     TextView txtLocationResult, txtUpdatedOn;
     // location last updated time
     private String mLastUpdateTime;
+
+    private String cityName = null;
+    ArrayList<String> visitList = new ArrayList<>();
 
     // location updates interval - 10sec
     private static final long UPDATE_INTERVAL_IN_MILLISECONDS = 10000;
@@ -72,6 +90,10 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     // boolean flag to toggle the ui
     private Boolean mRequestingLocationUpdates;
+    private GoogleMap mMap;
+    private double lat = 23.1815;
+    private double lng = 79.9864;
+    public LatLng location;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -89,7 +111,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
          findViewById(R.id.button_startLocationUpdate).setOnClickListener(this);
          findViewById(R.id.button_stopLocationUpdate).setOnClickListener(this);
          findViewById(R.id.button_logOut).setOnClickListener(this);
-         findViewById(R.id.button_last_location).setOnClickListener(this);
+         findViewById(R.id.button_mark_visit).setOnClickListener(this);
          findViewById(R.id.button_map_view).setOnClickListener(this);
 
          //location
@@ -98,6 +120,45 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
         // restore the values from saved instance state
         restoreValuesFromBundle(savedInstanceState);
+        SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
+                .findFragmentById(R.id.supportMap);
+        Log.d(TAG, "mapFragment = " + mapFragment);
+        if (mapFragment!= null) {
+            mapFragment.getMapAsync(this);
+        }
+    }
+
+    @Override
+    protected void onStart() {
+        super.onStart();
+        //check if user logged in or not
+        if(!SharedPreferencesManager.getInstance(this).isLoggedIn()) {
+            Intent i = new Intent(this, LoginActivity.class);
+            i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
+            startActivity(i);
+        }
+    }
+
+    @Override
+    public void onMapReady(GoogleMap googleMap) {
+        mMap = googleMap;
+        Log.d(TAG, "onMapReady");
+        // Add a marker in Sydney and move the camera
+//        LatLng location = new LatLng(lat, lng);
+//        mMap.addMarker(new MarkerOptions().position(location).title("You are here"));
+//        mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
+        init();
+        startLocationUpdates();
+    }
+
+    private void animateCamera(LatLng latLng) {
+        Log.d(TAG, "animateCamera");
+        GoogleMapHelper googleMapHelper = new GoogleMapHelper();
+        CameraUpdate cameraUpdate = googleMapHelper.buildCameraUpdate(latLng);
+        mMap.clear();
+        mMap.addMarker(googleMapHelper.getMarkerOptions(location,0));
+        mMap.animateCamera(cameraUpdate);
+        //mMap.addMarker(new MarkerOptions().position(location).title("You are here"));
     }
 
     private void init() {
@@ -113,6 +174,30 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 // location is received
                 mCurrentLocation = locationResult.getLastLocation();
                 mLastUpdateTime = DateFormat.getTimeInstance().format(new Date());
+
+                lat = mCurrentLocation.getLatitude();
+                lng = mCurrentLocation.getLongitude();
+
+                location = new LatLng(lat, lng);
+                Log.d(TAG, "location = " + lat +" - " + lng);
+                animateCamera(location);
+
+                Geocoder geocoder = new Geocoder(MainActivity.this, Locale.getDefault());
+                List<Address> addresses = null;
+                try {
+                    addresses = geocoder.getFromLocation(lat, lng, 1);
+                } catch (IOException e) {
+                    Log.d(TAG, "Exception = " +e);
+                    e.printStackTrace();
+                }
+
+                if (addresses!=null) {
+                    cityName = addresses.get(0).getAddressLine(0);
+
+                    Log.d(TAG, "Address = " +cityName);
+                } else {
+                    Log.d(TAG, "Address null = " +cityName);
+                }
 
                 updateLocationUI();
             }
@@ -138,16 +223,13 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
             if (savedInstanceState.containsKey("is_requesting_updates")) {
                 mRequestingLocationUpdates = savedInstanceState.getBoolean("is_requesting_updates");
             }
-
             if (savedInstanceState.containsKey("last_known_location")) {
                 mCurrentLocation = savedInstanceState.getParcelable("last_known_location");
             }
-
             if (savedInstanceState.containsKey("last_updated_on")) {
                 mLastUpdateTime = savedInstanceState.getString("last_updated_on");
             }
         }
-
         updateLocationUI();
     }
 
@@ -163,15 +245,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                     "Lat: " + mCurrentLocation.getLatitude() + ", " +
                             "Lng: " + mCurrentLocation.getLongitude()
             );
-
             // giving a blink animation on TextView
             txtLocationResult.setAlpha(0);
             txtLocationResult.animate().alpha(1).setDuration(300);
-
             // location last updated time
             txtUpdatedOn.setText("Last updated on: " + mLastUpdateTime);
         }
-
         //toggleButtons();
     }
 
@@ -335,13 +414,11 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     public void onResume() {
         super.onResume();
-
         // Resuming location updates depending on button state and
         // allowed permissions
         if (mRequestingLocationUpdates && checkPermissions()) {
             startLocationUpdates();
         }
-
         updateLocationUI();
     }
 
@@ -355,21 +432,9 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     @Override
     protected void onPause() {
         super.onPause();
-
         if (mRequestingLocationUpdates) {
             // pausing location updates
             stopLocationUpdates();
-        }
-    }
-
-    @Override
-    protected void onStart() {
-        super.onStart();
-        //check if user logged in or not
-        if(!SharedPreferencesManager.getInstance(this).isLoggedIn()) {
-            Intent i = new Intent(this, LoginActivity.class);
-            i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);
-            startActivity(i);
         }
     }
 
@@ -386,11 +451,12 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 stopLocationButtonClick();
                 break;
 
-            case R.id.button_last_location:
-                showLastKnownLocation();
+            case R.id.button_mark_visit:
+                markVisit();
+                break;
 
             case R.id.button_map_view:
-                Intent map = new Intent(this, MapsActivity.class);
+                Intent map = new Intent(this, VisitHistory.class);
                 startActivity(map);
                 break;
 
@@ -404,4 +470,18 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         }
 
     }
+
+    private void markVisit() {
+        Log.d(TAG, "mark visit");
+
+        visitList.add(cityName);
+        Log.d(TAG, "visitList = " + visitList);
+        for (int i=0; i < visitList.size(); i++){
+            Toast.makeText(this, "address = " + visitList.get(i), Toast.LENGTH_SHORT).show();
+            SharedPreferencesManager.getInstance(this).saveAddress(visitList);
+        }
+
+    }
+
+
 }
