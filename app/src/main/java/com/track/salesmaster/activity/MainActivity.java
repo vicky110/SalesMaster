@@ -1,4 +1,4 @@
-package com.track.salesmaster;
+package com.track.salesmaster.activity;
 
 import androidx.annotation.NonNull;
 import androidx.appcompat.app.AppCompatActivity;
@@ -8,7 +8,6 @@ import android.annotation.SuppressLint;
 import android.app.Activity;
 import android.content.Intent;
 import android.content.IntentSender;
-import android.content.SharedPreferences;
 import android.content.pm.PackageManager;
 import android.location.Address;
 import android.location.Geocoder;
@@ -47,9 +46,8 @@ import com.karumi.dexter.listener.PermissionDeniedResponse;
 import com.karumi.dexter.listener.PermissionGrantedResponse;
 import com.karumi.dexter.listener.PermissionRequest;
 import com.karumi.dexter.listener.single.PermissionListener;
-import com.track.salesmaster.activity.LoginActivity;
-import com.track.salesmaster.activity.MapsActivity;
-import com.track.salesmaster.activity.VisitHistory;
+import com.track.salesmaster.BuildConfig;
+import com.track.salesmaster.R;
 import com.track.salesmaster.helper.GoogleMapHelper;
 import com.track.salesmaster.response.Data;
 import com.track.salesmaster.utility.SharedPreferencesManager;
@@ -63,7 +61,6 @@ import java.util.Locale;
 
 public class MainActivity extends AppCompatActivity implements View.OnClickListener, OnMapReadyCallback {
     public String TAG = "v-v " + getClass().getName();
-    TextView txtLocationResult, txtUpdatedOn;
     // location last updated time
     private String mLastUpdateTime;
 
@@ -101,8 +98,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         setContentView(R.layout.activity_main);
         Log.d(TAG, "onCreate");
         TextView textView_welcome = findViewById(R.id.welcome_text);
-        txtLocationResult = findViewById(R.id.location_result);
-        txtUpdatedOn = findViewById(R.id.updated_on);
 
         Data data = SharedPreferencesManager.getInstance(this).getUser();
 
@@ -143,10 +138,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onMapReady(GoogleMap googleMap) {
         mMap = googleMap;
         Log.d(TAG, "onMapReady");
-        // Add a marker in Sydney and move the camera
-//        LatLng location = new LatLng(lat, lng);
-//        mMap.addMarker(new MarkerOptions().position(location).title("You are here"));
-//        mMap.moveCamera(CameraUpdateFactory.newLatLng(location));
         init();
         startLocationUpdates();
     }
@@ -158,7 +149,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         mMap.clear();
         mMap.addMarker(googleMapHelper.getMarkerOptions(location,0));
         mMap.animateCamera(cameraUpdate);
-        //mMap.addMarker(new MarkerOptions().position(location).title("You are here"));
     }
 
     private void init() {
@@ -198,8 +188,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 } else {
                     Log.d(TAG, "Address null = " +cityName);
                 }
-
-                updateLocationUI();
             }
         };
 
@@ -230,28 +218,7 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 mLastUpdateTime = savedInstanceState.getString("last_updated_on");
             }
         }
-        updateLocationUI();
-    }
 
-
-    /**
-     * Update the UI displaying the location data
-     * and toggling the buttons
-     */
-    private void updateLocationUI() {
-        Log.d(TAG, "updateLocationUI");
-        if (mCurrentLocation != null) {
-            txtLocationResult.setText(
-                    "Lat: " + mCurrentLocation.getLatitude() + ", " +
-                            "Lng: " + mCurrentLocation.getLongitude()
-            );
-            // giving a blink animation on TextView
-            txtLocationResult.setAlpha(0);
-            txtLocationResult.animate().alpha(1).setDuration(300);
-            // location last updated time
-            txtUpdatedOn.setText("Last updated on: " + mLastUpdateTime);
-        }
-        //toggleButtons();
     }
 
     @Override
@@ -263,22 +230,37 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     }
 
-//    private void toggleButtons() {
-//        if (mRequestingLocationUpdates) {
-//            btnStartUpdates.setEnabled(false);
-//            btnStopUpdates.setEnabled(true);
-//        } else {
-//            btnStartUpdates.setEnabled(true);
-//            btnStopUpdates.setEnabled(false);
-//        }
-//    }
-
     /**
      * Starting location updates
      * Check whether location settings are satisfied and then
      * location updates will be requested
      */
     private void startLocationUpdates() {
+
+        // Requesting ACCESS_FINE_LOCATION using Dexter library
+        Dexter.withActivity(this)
+                .withPermission(Manifest.permission.ACCESS_FINE_LOCATION)
+                .withListener(new PermissionListener() {
+                    @Override
+                    public void onPermissionGranted(PermissionGrantedResponse response) {
+                        mRequestingLocationUpdates = true;
+                    }
+
+                    @Override
+                    public void onPermissionDenied(PermissionDeniedResponse response) {
+                        if (response.isPermanentlyDenied()) {
+                            // open device settings when the permission is
+                            // denied permanently
+                            openSettings();
+                        }
+                    }
+
+                    @Override
+                    public void onPermissionRationaleShouldBeShown(PermissionRequest permission, PermissionToken token) {
+                        token.continuePermissionRequest();
+                    }
+                }).check();
+
         mSettingsClient
                 .checkLocationSettings(mLocationSettingsRequest)
                 .addOnSuccessListener(this, new OnSuccessListener<LocationSettingsResponse>() {
@@ -293,7 +275,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                         mFusedLocationClient.requestLocationUpdates(mLocationRequest,
                                 mLocationCallback, Looper.myLooper());
 
-                        updateLocationUI();
                     }
                 })
                 .addOnFailureListener(this, new OnFailureListener() {
@@ -321,7 +302,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                                 Toast.makeText(MainActivity.this, errorMessage, Toast.LENGTH_LONG).show();
                         }
 
-                        updateLocationUI();
                     }
                 });
     }
@@ -353,11 +333,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 }).check();
     }
 
-    public void stopLocationButtonClick() {
-        mRequestingLocationUpdates = false;
-        stopLocationUpdates();
-    }
-
     public void stopLocationUpdates() {
         // Removing location updates
         mFusedLocationClient
@@ -365,8 +340,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
                 .addOnCompleteListener(this, new OnCompleteListener<Void>() {
                     @Override
                     public void onComplete(@NonNull Task<Void> task) {
-                        Toast.makeText(getApplicationContext(), "Location updates stopped!", Toast.LENGTH_SHORT).show();
-                        //toggleButtons();
                     }
                 });
     }
@@ -419,7 +392,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
         if (mRequestingLocationUpdates && checkPermissions()) {
             startLocationUpdates();
         }
-        updateLocationUI();
     }
 
     private boolean checkPermissions() {
@@ -443,14 +415,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
     public void onClick(View v) {
         switch (v.getId()){
 
-            case R.id.button_startLocationUpdate :
-                startLocationButtonClick();
-                break;
-
-            case R.id.button_stopLocationUpdate:
-                stopLocationButtonClick();
-                break;
-
             case R.id.button_mark_visit:
                 markVisit();
                 break;
@@ -473,8 +437,16 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
 
     private void markVisit() {
         Log.d(TAG, "mark visit");
-
-        visitList.add(cityName);
+        ArrayList<String> checkList = new ArrayList<String>();
+        checkList = (SharedPreferencesManager.getInstance(this).getAddressList() );
+        if (checkList != null) {
+            visitList = checkList;
+            visitList.add(cityName);
+            Log.d(TAG, "list item added");
+        } else {
+            Log.d(TAG, "list cleared");
+            visitList.add(cityName);
+        }
         Log.d(TAG, "visitList = " + visitList);
         for (int i=0; i < visitList.size(); i++){
             Toast.makeText(this, "address = " + visitList.get(i), Toast.LENGTH_SHORT).show();

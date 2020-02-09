@@ -11,7 +11,7 @@ import com.track.salesmaster.R;
 
 public class GoogleMapHelper {
 
-    private static final int ZOOM_LEVEL = 18;
+    private static final int ZOOM_LEVEL = 20;
     private static final int TILT_LEVEL = 25;
 
     /**

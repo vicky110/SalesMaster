@@ -31,12 +31,8 @@ import com.google.android.gms.maps.model.LatLng;
 import com.google.android.gms.maps.model.MarkerOptions;
 import com.google.android.gms.tasks.OnFailureListener;
 import com.google.android.gms.tasks.OnSuccessListener;
-import com.track.salesmaster.MainActivity;
 import com.track.salesmaster.R;
 import com.track.salesmaster.helper.GoogleMapHelper;
-
-import java.text.DateFormat;
-import java.util.Date;
 
 public class MapsActivity extends FragmentActivity implements OnMapReadyCallback {
     private String TAG = "v-v " + getClass().getName();

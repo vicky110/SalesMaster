@@ -7,7 +7,6 @@ import android.util.Log;
 import com.google.gson.Gson;
 import com.google.gson.GsonBuilder;
 import com.google.gson.reflect.TypeToken;
-import com.track.salesmaster.MainActivity;
 import com.track.salesmaster.response.Data;
 
 import java.lang.reflect.Modifier;
@@ -17,9 +16,21 @@ import java.util.ArrayList;
 public class SharedPreferencesManager {
     private String TAG = "v-v "+ getClass().getName();
     private static final String SHARED_PREF_NAME = "my_shared_pref";
-    private static final String SHARED_PREF_ADDRESS = "my_address";
+    private String SHARED_PREF_ADDRESS = "my_address";
     private static SharedPreferencesManager mInstance;
     private Context mContext;
+
+    public SharedPreferencesManager(String SHARED_PREF_ADDRESS) {
+        this.SHARED_PREF_ADDRESS = SHARED_PREF_ADDRESS;
+    }
+
+    public String getSHARED_PREF_ADDRESS() {
+        return SHARED_PREF_ADDRESS;
+    }
+
+    public void setSHARED_PREF_ADDRESS(String SHARED_PREF_ADDRESS) {
+        this.SHARED_PREF_ADDRESS = SHARED_PREF_ADDRESS;
+    }
 
     private SharedPreferencesManager(Context mContext){
         this.mContext = mContext;
@@ -73,6 +84,13 @@ public class SharedPreferencesManager {
 
     public void clear() {
         SharedPreferences sharedPreferences = mContext.getSharedPreferences(SHARED_PREF_NAME, Context.MODE_PRIVATE);
+        SharedPreferences.Editor editor = sharedPreferences.edit();
+        editor.clear();
+        editor.apply();
+    }
+
+    public void clear_address() {
+        SharedPreferences sharedPreferences = mContext.getSharedPreferences(SHARED_PREF_ADDRESS, Context.MODE_PRIVATE);
         SharedPreferences.Editor editor = sharedPreferences.edit();
         editor.clear();
         editor.apply();

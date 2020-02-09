@@ -6,11 +6,9 @@ import android.content.Intent;
 import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
-import android.widget.Button;
 import android.widget.EditText;
 import android.widget.Toast;
 
-import com.track.salesmaster.MainActivity;
 import com.track.salesmaster.R;
 import com.track.salesmaster.response.RegisterResponse;
 import com.track.salesmaster.rest.RetrofitClient;
