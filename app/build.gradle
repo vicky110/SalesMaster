@@ -1,4 +1,5 @@
 apply plugin: 'com.android.application'
+// key - password - Sales@123456
 
 android {
     compileSdkVersion 28

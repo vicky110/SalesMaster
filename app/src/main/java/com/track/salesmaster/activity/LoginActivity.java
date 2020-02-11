@@ -104,8 +104,8 @@ public class LoginActivity extends AppCompatActivity implements View.OnClickList
                                     .saveUser(s.getData());
 
                             //setting user email into shared pref address name for address list
-                            String userName = s.getData().getUserEmail();
-                            SharedPreferencesManager.getInstance(LoginActivity.this).setSHARED_PREF_ADDRESS(userName);
+                            String userEmail = s.getData().getUserEmail();
+                            SharedPreferencesManager.getInstance(LoginActivity.this).setSHARED_PREF_ADDRESS(userEmail);
 
                             Intent i = new Intent(LoginActivity.this, MainActivity.class);
                             i.setFlags(Intent.FLAG_ACTIVITY_CLEAR_TASK | Intent.FLAG_ACTIVITY_NEW_TASK);

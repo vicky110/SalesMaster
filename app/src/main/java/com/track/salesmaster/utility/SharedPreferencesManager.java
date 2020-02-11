@@ -20,14 +20,6 @@ public class SharedPreferencesManager {
     private static SharedPreferencesManager mInstance;
     private Context mContext;
 
-    public SharedPreferencesManager(String SHARED_PREF_ADDRESS) {
-        this.SHARED_PREF_ADDRESS = SHARED_PREF_ADDRESS;
-    }
-
-    public String getSHARED_PREF_ADDRESS() {
-        return SHARED_PREF_ADDRESS;
-    }
-
     public void setSHARED_PREF_ADDRESS(String SHARED_PREF_ADDRESS) {
         this.SHARED_PREF_ADDRESS = SHARED_PREF_ADDRESS;
     }

@@ -7,6 +7,7 @@ import android.os.Bundle;
 import android.util.Log;
 import android.view.View;
 import android.widget.EditText;
+import android.widget.ProgressBar;
 import android.widget.Toast;
 
 import com.track.salesmaster.R;
@@ -21,6 +22,7 @@ import retrofit2.Response;
 public class RegistrationActivity extends AppCompatActivity implements View.OnClickListener {
     private String TAG = "v-v "+ getClass().getName();
     private EditText email, password, name, mobile;
+    ProgressBar progressBar;
 
     @Override
     protected void onCreate(Bundle savedInstanceState) {
@@ -88,12 +90,16 @@ public class RegistrationActivity extends AppCompatActivity implements View.OnCl
     }
 
     private void doRegister(String email, String password, String name, String mobile) {
+        progressBar = findViewById(R.id.progressBar2);
+        progressBar.setVisibility(View.VISIBLE);
+        progressBar.requestFocus();
 
         Call<RegisterResponse> register = RetrofitClient.getInstance().getApi().register(email, password, name, mobile);
         register.enqueue(new Callback<RegisterResponse>() {
             @Override
             public void onResponse(Call<RegisterResponse> call, Response<RegisterResponse> response) {
                 Log.d(TAG, "Response Received");
+                progressBar.setVisibility(View.GONE);
                 if(response.isSuccessful()){
                     Log.d(TAG, "Response successful");
                     RegisterResponse R = response.body();

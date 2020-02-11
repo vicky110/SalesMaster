@@ -112,7 +112,6 @@ public class MainActivity extends AppCompatActivity implements View.OnClickListe
          //location
         // initialize the necessary libraries
         init();
-
         // restore the values from saved instance state
         restoreValuesFromBundle(savedInstanceState);
         SupportMapFragment mapFragment = (SupportMapFragment) getSupportFragmentManager()
